@@ -5,6 +5,8 @@
 ## 🧰 Tech I work with
 <p>
   <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white">
+  <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white">
+  <img src="https://img.shields.io/badge/C%2B%2B-00599C?logo=cplusplus&logoColor=white">
   <img src="https://img.shields.io/badge/Node.js-5FA04E?logo=node.js&logoColor=white">
   <img src="https://img.shields.io/badge/Fastify-000000?logo=fastify&logoColor=white">
   <img src="https://img.shields.io/badge/React-149ECA?logo=react&logoColor=white">
