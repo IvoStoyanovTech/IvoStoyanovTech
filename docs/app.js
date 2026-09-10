@@ -24,127 +24,24 @@ const snapshot = [
   ['951fc274f250ee59ab1cd8b7ae527915ea8b624c','Update README.md','2026-08-20T14:49:00Z'],
   ['add0f4788d7620aaad546ca9c1a0dc9b10f885be','Initial commit','2026-08-20T14:48:32Z']
 ].map(([sha,message,date])=>({sha,message,date}));
-const $ = (id)=>document.getElementById(id);
-const escapeHTML = (value)=>String(value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let activeWork = 0;
-let userInteracting = false;
-let lastSlide = performance.now();
-function showWork(index) {
-  activeWork = (index + work.length) % work.length;
-  const item = work[activeWork];
-  const card = $('work-card');
-  card.innerHTML = `<div class="work-icon" aria-hidden="true">${[17,28,36,24,32,15].map((h,i)=>`<i style="--h:${h}px;--d:${i*.15}s"></i>`).join('')}</div><h3>${escapeHTML(item.title)}</h3><p>${escapeHTML(item.text)}</p><div class="work-tags">${item.tags.map(t=>`<span>${escapeHTML(t)}</span>`).join('')}</div>`;
-  card.style.animation = 'none';
-  void card.offsetWidth;
-  card.style.animation = '';
-  $('work-count').textContent = `${String(activeWork+1).padStart(2,'0')} / 06`;
-  [...$('slide-dots').children].forEach((button,i)=>button.setAttribute('aria-pressed',String(i===activeWork)));
-  lastSlide = performance.now();
-}
-work.forEach((item,i)=>{
-  const button = document.createElement('button');
-  button.setAttribute('aria-label',`Show ${item.title}`);
-  button.setAttribute('aria-pressed',String(i===0));
-  button.addEventListener('click',()=>showWork(i));
-  $('slide-dots').append(button);
-});
-$('next-work').addEventListener('click',()=>showWork(activeWork+1));
-$('previous-work').addEventListener('click',()=>showWork(activeWork-1));
-const workArea = document.querySelector('.work-area');
-workArea.addEventListener('pointerenter',()=>userInteracting=true);
-workArea.addEventListener('pointerleave',()=>userInteracting=false);
-showWork(0);
-$('stack-grid').innerHTML = stack.map((group,i)=>`<div class="stack-group"><div class="stack-group-head"><h3>${group.title}</h3><span>0${i+1}</span></div><div class="tech-list">${group.items.map(([mark,name,color])=>`<span class="tech"><b style="--color:${color}" aria-hidden="true">${mark}</b>${name}</span>`).join('')}</div></div>`).join('');
-function renderCommits(commits,live=false) {
-  $('commit-total').textContent=commits.length;
-  $('commit-total-label').textContent=commits.length===100?'recent commits loaded':'commits loaded';
-  const format = new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'});
-  $('commit-list').innerHTML=commits.slice(0,3).map(c=>`<a class="commit-row" href="https://github.com/${REPO}/commit/${encodeURIComponent(c.sha)}" target="_blank" rel="noopener noreferrer"><svg><use href="#git"/></svg><div class="commit-text"><p title="${escapeHTML(c.message)}">${escapeHTML(c.message)}</p><span>${escapeHTML(c.sha.slice(0,7))} · ${PROFILE}</span></div><time datetime="${escapeHTML(c.date)}">${format.format(new Date(c.date))}</time></a>`).join('') || '<p>No commits available.</p>';
-  const end = new Date(); end.setUTCHours(23,59,59,999);
-  const week=7*86400000;
-  const start = new Date(end.getTime()-12*week);
-  const buckets=Array(12).fill(0);
-  commits.forEach(c=>{const bin=Math.floor((new Date(c.date)-start)/week);if(bin>=0&&bin<12)buckets[bin]++});
-  const max=Math.max(1,...buckets);
-  $('commit-chart').innerHTML=buckets.map((count,i)=>`<div class="chart-bar ${count?'has-commits':''}" style="--height:${Math.max(9,count/max*100)}%" title="Week of ${format.format(new Date(start.getTime()+i*week))}: ${count} ${count===1?'commit':'commits'}" role="img" aria-label="Week of ${format.format(new Date(start.getTime()+i*week))}: ${count} commits"></div>`).join('');
-  $('chart-start').textContent=format.format(start);
-  $('chart-end').textContent=format.format(end);
-  $('commit-status').textContent=live?'GITHUB · UPDATED':'SAVED SNAPSHOT';
-  $('sync-note').textContent=live?'Public GitHub data · updated just now':'Snapshot · 10 Sep 2026';
-}
-renderCommits(snapshot);
-async function updateCommits(){
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),8000);
-  try{
-    const response=await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=100`,{signal:controller.signal,headers:{Accept:'application/vnd.github+json'}});
-    if(!response.ok)throw new Error('GitHub unavailable');
-    const data=await response.json();
-    if(!Array.isArray(data))throw new Error('Invalid response');
-    const commits=data.filter(c=>/^[a-f0-9]{40}$/.test(c.sha)&&c.commit?.message&&Number.isFinite(Date.parse(c.commit?.committer?.date))).map(c=>({sha:c.sha,message:c.commit.message.split('\n')[0],date:c.commit.committer.date}));
-    renderCommits(commits,true);
-  }catch{
-    $('sync-note').textContent='GitHub unavailable · saved 10 Sep 2026';
-  }finally{clearTimeout(timeout)}
-}
-updateCommits();
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const flows=[['SPEECH','REASONING','RESPONSE'],['CAMPAIGN','AI CALL','HUMAN'],['RECORDING','CHECKLIST','SCORE'],['LEADS','QUOTES','CAMPAIGNS'],['WEBSITE','API','AI MODEL'],['CONTEXT','AI TOOLS','SOFTWARE']];
+let activeWork=0;
+function showWork(i,focus=false){activeWork=(i+work.length)%work.length;const item=work[activeWork];[...$('work-index').children].forEach((b,j)=>{b.setAttribute('aria-selected',String(j===activeWork));b.tabIndex=j===activeWork?0:-1});const detail=$('work-detail');detail.setAttribute('aria-labelledby','work-tab-'+activeWork);detail.classList.remove('detail-enter');detail.innerHTML=`<div class="detail-top"><span>PROJECT AREA / ${String(activeWork+1).padStart(2,'0')}</span><span>↗</span></div><h3>${esc(item.title)}</h3><p>${esc(item.text)}</p><div class="architecture" aria-label="${flows[activeWork].join(' to ')}">${flows[activeWork].map(s=>`<span>${s}</span>`).join('<b aria-hidden="true">→</b>')}</div><div class="detail-bottom"><span>${esc(item.tags[0]).toUpperCase()}</span><span>IVAYLO / KWOTER</span></div>`;void detail.offsetWidth;detail.classList.add('detail-enter');if(focus)$('work-tab-'+activeWork).focus()}
+work.forEach((item,i)=>{const b=document.createElement('button');b.className='work-tab';b.id='work-tab-'+i;b.setAttribute('role','tab');b.setAttribute('aria-controls','work-detail');b.innerHTML=`<span class="index">${String(i+1).padStart(2,'0')}</span><span>${esc(item.title)}</span><span class="tab-arrow">↗</span>`;b.addEventListener('click',()=>showWork(i));b.addEventListener('keydown',e=>{if(['ArrowDown','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();showWork(e.key==='Home'?0:e.key==='End'?5:activeWork+(e.key==='ArrowDown'?1:-1),true)}});$('work-index').append(b)});showWork(0);
+$('stack-grid').innerHTML=stack.map((g,i)=>`<div class="stack-row"><h3><span>0${i+1}</span>${g.title}</h3><div class="tech-list">${g.items.map(([,name])=>`<span class="tech">${name}</span>`).join('')}</div></div>`).join('');
+function renderCommits(commits,live=false){const format=new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'});$('commit-list').innerHTML=commits.slice(0,3).map(c=>`<a class="commit-row" href="https://github.com/${REPO}/commit/${encodeURIComponent(c.sha)}" target="_blank" rel="noopener noreferrer"><code>${esc(c.sha.slice(0,7))}</code><span class="message" title="${esc(c.message)}">${esc(c.message)}</span><time datetime="${esc(c.date)}">${format.format(new Date(c.date))}</time></a>`).join('');$('commit-status').textContent=live?'Profile repository · refreshed from GitHub':'Profile repository · snapshot, 10 Sep 2026'}renderCommits(snapshot);
+async function refreshCommits(){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);try{const r=await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=3`,{signal:controller.signal});if(!r.ok)throw Error();const data=await r.json();const commits=data.filter(c=>/^[a-f0-9]{40}$/.test(c.sha)&&Number.isFinite(Date.parse(c.commit?.committer?.date))).map(c=>({sha:c.sha,message:c.commit.message.split('\n')[0],date:c.commit.committer.date}));renderCommits(commits,true)}catch{$('commit-status').textContent='GitHub unavailable · saved profile commits shown'}finally{clearTimeout(timer)}}refreshCommits();
+function replayWave(){const grid=$('calendar-grid');grid.classList.remove('waving');void grid.offsetWidth;if(!paused)grid.classList.add('waving')}
+$('replay-wave').addEventListener('click',replayWave);
+async function loadCalendar(){try{const r=await fetch('contributions.json');if(!r.ok)throw Error();const data=await r.json();$('contribution-total').textContent=data.totalContributions.toLocaleString('en-GB');const levels=['NONE','FIRST_QUARTILE','SECOND_QUARTILE','THIRD_QUARTILE','FOURTH_QUARTILE'];let previousMonth='';data.weeks.forEach((week,col)=>{const column=document.createElement('div');column.className='calendar-week';const sample=week.contributionDays.find(d=>d.date.endsWith('-01'))||week.contributionDays[0];const month=new Intl.DateTimeFormat('en-GB',{month:'short',timeZone:'UTC'}).format(new Date(sample.date));if(month!==previousMonth&&(col<51||col===0)){const label=document.createElement('span');label.textContent=month;label.style.gridColumn=String(col+1);$('months').append(label);previousMonth=month}for(let row=0;row<7;row++){const d=week.contributionDays.find(d=>d.weekday===row);const cell=document.createElement('span');cell.className='day'+(!d?' missing':'');cell.style.setProperty('--delay',`${col*34+row*19}ms`);if(d){cell.dataset.level=String(Math.max(0,levels.indexOf(d.contributionLevel)));cell.title=`${d.contributionCount} contributions on ${d.date}`;cell.setAttribute('role','img');cell.setAttribute('aria-label',cell.title)}column.append(cell)}$('calendar-grid').append(column)});const observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){replayWave();observer.disconnect()}},{threshold:.35});observer.observe($('calendar-grid'))}catch{$('calendar-status').textContent='Contribution calendar unavailable. View the calendar on GitHub.';$('contribution-total').textContent='—'}}loadCalendar();
+const canvas=$('sculpture'),ctx=canvas.getContext('2d');let w=0,h=0,t=0,rotation=-.55,tilt=.85,mode=0,morph=0,dragging=false,lastX=0,lastY=0,lastTime=0,raf;
+const points=Array.from({length:32*32},(_,i)=>({x:i%32/31*2-1,z:Math.floor(i/32)/31*2-1}));
+function draw(){if(!ctx||!w)return;ctx.clearRect(0,0,w,h);const scale=Math.min(w,h)*.30;const cr=Math.cos(rotation),sr=Math.sin(rotation),ct=Math.cos(tilt),st=Math.sin(tilt);const field=points.map(({x,z},i)=>{const wave=Math.sin(x*3.2+t)*Math.cos(z*3.2-t*.6)*.38;const structure=Math.sin(x*5)*Math.sin(z*5)*.12+(Math.abs(x)<.65&&Math.abs(z)<.65?.55:-.15);const y=wave*(1-morph)+structure*morph;const xx=x*cr-z*sr,zz=x*sr+z*cr;const yy=y*ct-zz*st,depth=y*st+zz*ct;const p=3.5/(3.5-depth);return {x:w/2+xx*scale*p,y:h*.52+yy*scale*p,depth,p,i}}).sort((a,b)=>a.depth-b.depth);field.forEach(({x,y,depth,p,i})=>{const alpha=.18+(depth+1.5)/3*.65;ctx.fillStyle=`rgba(245,245,245,${alpha})`;const size=(i%33===0?2.4:1.15)*p;ctx.fillRect(x,y,size,size);if(i%4===0){ctx.strokeStyle=`rgba(210,210,210,${alpha*.28})`;ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(x,y+4);ctx.lineTo(x,y+12*p);ctx.stroke()}})}
+function resize(){const r=canvas.getBoundingClientRect();w=r.width;h=r.height;const dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);if(ctx){ctx.setTransform(dpr,0,0,dpr,0,0);draw()}}
+function frame(now){const delta=Math.min(40,now-lastTime||16);lastTime=now;if(!paused){t+=delta*.0005;if(!dragging)rotation+=delta*.000055;morph+=(mode-morph)*.035;draw()}raf=requestAnimationFrame(frame)}
+canvas.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(dragging){rotation+=(e.clientX-lastX)*.009;tilt=Math.max(.15,Math.min(1.5,tilt+(e.clientY-lastY)*.006));lastX=e.clientX;lastY=e.clientY;draw()}});['pointerup','pointercancel','lostpointercapture'].forEach(event=>canvas.addEventListener(event,()=>dragging=false));canvas.addEventListener('keydown',e=>{if(e.key.startsWith('Arrow')){e.preventDefault();rotation+=e.key==='ArrowRight'?.13:e.key==='ArrowLeft'?-.13:0;tilt=Math.max(.15,Math.min(1.5,tilt+(e.key==='ArrowUp'?-.1:e.key==='ArrowDown'?.1:0)));draw()}});
+$('field-mode').addEventListener('click',()=>{mode=1-mode;$('field-mode').textContent=mode?'STRUCTURE ↔ FIELD':'FIELD ↔ STRUCTURE';$('field-mode').setAttribute('aria-pressed',String(!!mode));if(paused){morph=mode;draw()}});
+function setMotion(value){paused=value;document.body.classList.toggle('motion-paused',paused);$('motion-toggle').setAttribute('aria-pressed',String(paused));$('motion-toggle').textContent=paused?'▷ RESUME MOTION':'Ⅱ PAUSE MOTION'}$('motion-toggle').addEventListener('click',()=>setMotion(!paused));reducedMotion.addEventListener('change',e=>setMotion(e.matches));setMotion(paused);new ResizeObserver(resize).observe(canvas);document.addEventListener('visibilitychange',()=>{cancelAnimationFrame(raf);if(!document.hidden){lastTime=performance.now();raf=requestAnimationFrame(frame)}});raf=requestAnimationFrame(frame);
 
-// A perspective-projected 3D orbital surface. No libraries or server required.
-const canvas=$('sculpture');
-const ctx=canvas.getContext('2d');
-let width=0,height=0,dpr=1,angle=.35,mouseX=0,mouseY=0,targetX=0,targetY=0,lastFrame=0,frameHandle;
-const ringCount=42,segments=120;
-const geometry=Array.from({length:ringCount},(_,ring)=>{
-  const u=ring/ringCount*Math.PI*2;
-  return Array.from({length:segments+1},(_,part)=>{
-    const v=part/segments*Math.PI*2;
-    const radial=1.17+.46*Math.cos(v);
-    return [radial*Math.cos(u),radial*Math.sin(u),.46*Math.sin(v)];
-  });
-});
-function resize(){const rect=canvas.getBoundingClientRect();width=rect.width;height=rect.height;dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);if(ctx){ctx.setTransform(dpr,0,0,dpr,0,0);draw()}}
-function draw(){
-  if(!ctx||!width)return;
-  ctx.clearRect(0,0,width,height);
-  const tiltX=1.0+mouseY*.2,tiltY=-.6+mouseX*.3,spin=angle;
-  const scale=Math.min(width,height)*.232;
-  const cx=width*.5,cy=height*.48;
-  const sinX=Math.sin(tiltX),cosX=Math.cos(tiltX),sinY=Math.sin(tiltY),cosY=Math.cos(tiltY),sinZ=Math.sin(spin),cosZ=Math.cos(spin);
-  const paths=geometry.map((ring,i)=>{
-    let depth=0;
-    const points=ring.map(([x,y,z])=>{
-      let x1=x*cosZ-y*sinZ,y1=x*sinZ+y*cosZ;
-      let y2=y1*cosX-z*sinX,z2=y1*sinX+z*cosX;
-      let x3=x1*cosY+z2*sinY,z3=-x1*sinY+z2*cosY;
-      depth+=z3;
-      const perspective=4.8/(4.8-z3);
-      return [cx+x3*scale*perspective,cy+y2*scale*perspective,z3];
-    });
-    return {points,depth:depth/(segments+1),i};
-  }).sort((a,b)=>a.depth-b.depth);
-  const glow=ctx.createRadialGradient(cx,cy,5,cx,cy,scale*1.8);
-  glow.addColorStop(0,'rgba(154,228,61,.055)');glow.addColorStop(1,'rgba(154,228,61,0)');
-  ctx.fillStyle=glow;ctx.fillRect(0,0,width,height);
-  paths.forEach(({points,depth,i})=>{
-    const brightness=(depth+1.7)/3.4;
-    ctx.beginPath();points.forEach(([x,y],j)=>j?ctx.lineTo(x,y):ctx.moveTo(x,y));
-    ctx.strokeStyle=`rgba(${Math.round(123+brightness*86)},${Math.round(160+brightness*95)},${Math.round(61+brightness*72)},${.16+brightness*.66})`;
-    ctx.lineWidth=.55+brightness*.65;
-    ctx.stroke();
-    if(i%5===0){const point=points[(i*11)%segments];ctx.beginPath();ctx.arc(point[0],point[1],1.7,0,Math.PI*2);ctx.fillStyle='#e5ffb5';ctx.fill()}
-  });
-}
-function loop(now){
-  const delta=Math.min(40,now-lastFrame||16);lastFrame=now;
-  if(!paused){angle+=delta*.00008;mouseX+=(targetX-mouseX)*.04;mouseY+=(targetY-mouseY)*.04;draw();if(now-lastSlide>7000&&!userInteracting&&!workArea.contains(document.activeElement))showWork(activeWork+1)}
-  frameHandle=requestAnimationFrame(loop);
-}
-$('visual').addEventListener('pointermove',e=>{const rect=canvas.getBoundingClientRect();targetX=(e.clientX-rect.left)/rect.width*2-1;targetY=(e.clientY-rect.top)/rect.height*2-1});
-$('visual').addEventListener('pointerleave',()=>{targetX=0;targetY=0});
-function setMotion(value){paused=value;document.body.classList.toggle('motion-paused',paused);$('motion-toggle').setAttribute('aria-pressed',String(paused));$('motion-toggle').setAttribute('aria-label',paused?'Resume animations':'Pause animations');$('motion-toggle').querySelector('span').textContent=paused?'Motion off':'Motion on';lastSlide=performance.now()}
-$('motion-toggle').addEventListener('click',()=>setMotion(!paused));
-reducedMotion.addEventListener('change',e=>setMotion(e.matches));
-setMotion(paused);
-new ResizeObserver(resize).observe(canvas);
-document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frameHandle)}else{lastFrame=performance.now();lastSlide=lastFrame;frameHandle=requestAnimationFrame(loop)}});
-frameHandle=requestAnimationFrame(loop);
