@@ -5,3 +5,5 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
 
 .day[data-description]{cursor:pointer}.day-tooltip{position:fixed;z-index:1000;pointer-events:none;max-width:calc(100vw - 16px);background:#eeeeea;color:#141414;border:1px solid #fff;padding:9px 13px;font:12px/1.5 var(--mono);box-shadow:0 5px 22px #0008;border-radius:4px}.day-tooltip[hidden]{display:none}.day:focus-visible{outline:2px solid white;outline-offset:2px}
+
+.tech-list{gap:13px 10px;align-items:center}.tech-badge{display:inline-flex;line-height:1;transition:transform .2s,filter .2s;filter:saturate(.95);max-width:100%}.tech-badge img{display:block;height:28px;width:auto;max-width:100%;border-radius:4px;box-shadow:0 2px 5px #0005}.tech-badge:hover{transform:translateY(-3px);filter:saturate(1.15) brightness(1.08)}@media(max-width:720px){.tech-list{gap:12px 9px}.tech-badge img{height:27px}}
