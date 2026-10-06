@@ -42,4 +42,4 @@
 - **AI-assisted engineering** — Claude & Codex, Hermes, Obsidian/Graphify, Groq, Qwen, Higgsfield
 
 ## 📫 Reach me
-<!-- add your links: LinkedIn / email / site -->
+https://ivaylo-tech-site.vercel.app/
